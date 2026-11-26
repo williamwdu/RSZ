@@ -69,7 +69,7 @@ python3 tools/simulate.py "TTC Slow Zones.shortcut"     # check the output looks
 
 ## If it breaks
 
-- **0 zones for every trip, or an error:** the TTC probably changed its page. In Shortcuts, add a Quick Look after the third *Replace Text* action. It should show text like `|Northbound Union to King|168|454|…`. Update the zone pattern (`ZONE_RE` in `tools/make_shortcut.py`) to match.
+- **0 zones for every trip, or an error:** the TTC probably changed its page. In Shortcuts, add a Quick Look after the third *Replace Text* action. It should show text like `|Northbound Union to King|168|454|…`. Update the zone pattern (`ZONE_RE` in `tools/make_shortcut.py`) to match. Note: on iPhone, Shortcuts hands the page over as plain text (one table cell per line), not raw HTML. The parser handles both, and `PAGE_MODE=text python3 tools/simulate.py …` tests the plain-text form.
 - **"Fix" shows the wrong thing:** a table column was added or removed. Same fix.
 - **A variable shows as missing inside the second loop:** tap it and pick *Repeat Item 2*.
 
