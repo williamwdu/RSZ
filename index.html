@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slow Zone Check — Toronto subway slow zones on your commute</title>
+<meta name="description" content="Pick your subway trips and get an Apple Shortcut that tells you how many reduced speed zones are on your commute.">
+<meta name="theme-color" content="#b3122a">
+<style>
+  :root {
+    --bg: #f6f4f1; --card: #ffffff; --ink: #1c1a19; --muted: #6b6560; --line: #e4dfd9;
+    --accent: #b3122a; --accent-ink: #ffffff; --soft: #fbeef0; --l1: #d9a400; --l2: #2e8540;
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141312; --card: #1e1c1b; --ink: #f1eeea; --muted: #a39d96; --line: #33302d;
+            --accent: #ff5a6e; --accent-ink: #1a0005; --soft: #2a1a1c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+         padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 40px); }
+  main { max-width: 640px; margin: 0 auto; padding: 0 18px; }
+  header { padding: 36px 0 12px; }
+  .badge { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600;
+           color: var(--accent); background: var(--soft); padding: 4px 10px; border-radius: 999px; }
+  h1 { font-size: 34px; line-height: 1.1; margin: 14px 0 10px; letter-spacing: -0.02em; }
+  header p { color: var(--muted); margin: 0; font-size: 17px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 20px; margin-top: 18px; }
+  h2 { font-size: 19px; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+         display: inline-grid; place-items: center; font-size: 14px; flex: none; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .trip { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+  .field { margin-bottom: 10px; }
+  input[type=text], select, textarea {
+    width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; -webkit-appearance: none; appearance: none; }
+  select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+           background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+  textarea { font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace; min-height: 90px; resize: vertical; }
+  .route { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .route b { color: var(--ink); font-weight: 600; }
+  .route.err { color: var(--accent); }
+  .dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .dots span { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+  .dots span.l1 { border-color: var(--l1); }
+  .dots span.l2 { border-color: var(--l2); }
+  .trip-actions { display: flex; gap: 14px; margin-top: 10px; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; text-decoration: none;
+         font: inherit; font-weight: 600; font-size: 17px; border-radius: 12px; padding: 14px; cursor: pointer;
+         border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .btn.secondary { background: transparent; color: var(--accent); }
+  .btn + .btn { margin-top: 10px; }
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); transform: translateX(-50%) translateY(20px);
+           background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; opacity: 0;
+           transition: .2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  ol.steps { padding-left: 20px; margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+  ol.steps li { margin-bottom: 6px; }
+  details { margin-top: 14px; font-size: 14px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+  footer { color: var(--muted); font-size: 13px; margin-top: 28px; padding: 0 4px; }
+  footer a, .hint a, ol.steps a { color: inherit; }
+  .example { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-top: 14px; }
+  .example div { margin: 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="badge">🐢 Toronto subway · Lines 1 &amp; 2</span>
+    <h1>How slow is your commute today?</h1>
+    <p>Pick your trips once. An Apple Shortcut then checks the TTC's reduced speed zone list and tells you how many are on your route and roughly how much time they add.</p>
+    <div class="example" aria-label="Example result">
+      <div><b>🚇 Work: 2 slow zone(s), about +0.6 min</b></div>
+      <div>🐢 St Clair West → Dupont: 25 km/h instead of 65, +25 s</div>
+      <div>🐢 Union → King: 20 km/h instead of 36, +13 s</div>
+    </div>
+  </header>
+
+  <section aria-labelledby="s1">
+    <h2 id="s1"><span class="num">1</span>Your trips</h2>
+    <p class="hint">Add each trip you take, in the direction you ride it. Transfers between Line 1 and Line 2 are worked out for you.</p>
+    <div id="trips"></div>
+    <button class="btn secondary" id="addTrip" type="button">＋ Add a trip</button>
+  </section>
+
+  <section aria-labelledby="s2">
+    <h2 id="s2"><span class="num">2</span>Get the shortcut</h2>
+    <p class="hint">Tapping the button copies your trips, then downloads the shortcut. When Shortcuts asks for your trips, paste.</p>
+    <a class="btn" id="install" href="TTC%20Slow%20Zones.shortcut">Copy trips &amp; get the shortcut</a>
+    <ol class="steps">
+      <li>Open it on your iPhone. If Safari saves it to Downloads, tap the download to open it in Shortcuts.</li>
+      <li>Tap <b>Set Up Shortcut</b>, paste your trips into the box, then <b>Add Shortcut</b>.</li>
+      <li>On the first run, tap <b>Allow</b> when it asks to connect to ttc.ca.</li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="s3">
+    <h2 id="s3"><span class="num">3</span>Check anytime</h2>
+    <p class="hint">Runs the shortcut with the trips on this page, handy after you change them. Trips are saved in this browser only.</p>
+    <a class="btn" id="run" href="#">Check my trips now</a>
+    <button class="btn secondary" id="copy" type="button">Copy trips</button>
+    <ol class="steps">
+      <li><b>Every morning:</b> Shortcuts → Automation → <b>Time of Day</b> → pick a time and weekdays → <b>Run Immediately</b> → choose <i>TTC Slow Zones</i>.</li>
+      <li><b>With Siri:</b> say “TTC Slow Zones”.</li>
+      <li><b>One tap:</b> in Safari, Share → <b>Add to Home Screen</b> to keep this page as a launcher.</li>
+    </ol>
+    <details>
+      <summary>Trips as text (advanced)</summary>
+      <p class="hint" style="margin-top:8px">This is exactly what the shortcut gets. To change trips later without this page, edit the first Text action in the shortcut.</p>
+      <textarea id="out" readonly aria-label="Trips as text"></textarea>
+      <div class="field" style="margin-top:10px">
+        <label for="scName">Shortcut name (only if you renamed it)</label>
+        <input type="text" id="scName" value="TTC Slow Zones" autocomplete="off">
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <p>Not affiliated with or endorsed by the Toronto Transit Commission. The shortcut reads the TTC's public <a href="https://www.ttc.ca/riding-the-ttc/Updates/Reduced-Speed-Zones">Reduced Speed Zones</a> page directly on your phone each time it runs; this site doesn't collect or republish any data. Delay estimates only count time spent at reduced speed, so the real delay is usually a little longer. Always check the TTC for official service information.</p>
+  </footer>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// Station names exactly as the TTC's slow zone page writes them.
+const LINE1 = ["Vaughan Metropolitan Centre","Highway 407","Pioneer Village","York University","Finch West","Downsview Park",
+  "Sheppard West","Wilson","Yorkdale","Lawrence West","Glencairn","Cedarvale","St Clair West","Dupont","Spadina","St George",
+  "Museum","Queen's Park","St Patrick","Osgoode","St Andrew","Union","King","Queen","TMU","College","Wellesley","Bloor-Yonge",
+  "Rosedale","Summerhill","St Clair","Davisville","Eglinton","Lawrence","York Mills","Sheppard-Yonge","North York Centre","Finch"];
+const LINE2 = ["Kipling","Islington","Royal York","Old Mill","Jane","Runnymede","High Park","Keele","Dundas West","Lansdowne",
+  "Dufferin","Ossington","Christie","Bathurst","Spadina","St George","Bay","Bloor-Yonge","Sherbourne","Castle Frank","Broadview",
+  "Chester","Pape","Donlands","Greenwood","Coxwell","Woodbine","Main Street","Victoria Park","Warden","Kennedy"];
+const LINES = { 1: LINE1, 2: LINE2 };
+const TRANSFER_COST = { "St George": 3, "Bloor-Yonge": 3, "Spadina": 6 };   // in "stops"; Spadina is a long walk
+const INTERCHANGES = Object.keys(TRANSFER_COST);
+const ALL = [...new Set([...LINE1, ...LINE2])];
+
+// Shortest route by stops (with a transfer penalty). Returns [{s, line}] or null.
+function shortest(from, to) {
+  const key = (s, l) => s + "|" + l, dist = {}, prev = {}, q = [];
+  for (const l of [1, 2]) if (LINES[l].includes(from)) { dist[key(from, l)] = 0; q.push([0, from, l]); }
+  while (q.length) {
+    q.sort((a, b) => a[0] - b[0]);
+    const [d, s, l] = q.shift();
+    if (d > dist[key(s, l)]) continue;
+    if (s === to) { const path = []; let k = key(s, l);
+      while (k) { const [ps, pl] = k.split("|"); path.unshift({ s: ps, line: +pl }); k = prev[k]; } return path; }
+    const arr = LINES[l], i = arr.indexOf(s), next = [];
+    if (i > 0) next.push([arr[i - 1], l, 1]);
+    if (i < arr.length - 1) next.push([arr[i + 1], l, 1]);
+    if (TRANSFER_COST[s]) next.push([s, l === 1 ? 2 : 1, TRANSFER_COST[s]]);
+    for (const [ns, nl, c] of next) { const k = key(ns, nl);
+      if (dist[k] === undefined || d + c < dist[k]) { dist[k] = d + c; prev[k] = key(s, l); q.push([d + c, ns, nl]); } }
+  }
+  return null;
+}
+function route(from, to, via) {
+  if (!from || !to || from === to) return null;
+  const legs = via && via !== from && via !== to ? [shortest(from, via), shortest(via, to)] : [shortest(from, to)];
+  if (legs.some(x => !x)) return null;
+  const out = [];
+  for (const leg of legs) for (const p of leg) {
+    const last = out[out.length - 1];
+    if (last && last.s === p.s) { last.line = p.line; continue; }   // transfer: same station, keep once
+    out.push({ ...p });
+  }
+  return out;
+}
+
+// ---------- state ----------
+const store = { get() { try { return JSON.parse(localStorage.getItem("szc-trips")); } catch (e) { return null; } },
+                set(v) { try { localStorage.setItem("szc-trips", JSON.stringify(v)); } catch (e) {} } };
+let trips = store.get() || [{ name: "Work", from: "Cedarvale", to: "King", via: "" }];
+
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function options(sel, placeholder) {
+  let h = `<option value="">${placeholder}</option>`;
+  for (const l of [1, 2]) {
+    h += `<optgroup label="Line ${l}">` + LINES[l].map(s => `<option${s === sel ? " selected" : ""}>${esc(s)}</option>`).join("") + "</optgroup>";
+  }
+  return h;
+}
+function cleanName(n) { return (n || "").replace(/[:\n\r]/g, " ").trim() || "Trip"; }
+
+function tripsText() {
+  return trips.map(t => { const r = route(t.from, t.to, t.via); return r ? `${cleanName(t.name)}: ${r.map(p => p.s).join(", ")}` : null; })
+              .filter(Boolean).join("\n");
+}
+
+function render() {
+  $("#trips").innerHTML = trips.map((t, i) => {
+    const r = route(t.from, t.to, t.via);
+    let info;
+    if (!t.from || !t.to) info = `<div class="route">Pick both stations.</div>`;
+    else if (!r) info = `<div class="route err">${t.from === t.to ? "Start and end are the same station." : "Can't find that route."}</div>`;
+    else {
+      const transfers = r.filter((p, k) => k > 0 && r[k - 1].line !== p.line).length;
+      info = `<div class="route"><b>${r.length - 1} stops</b>${transfers ? ` · ${transfers} transfer${transfers > 1 ? "s" : ""}` : ""}</div>
+              <div class="dots">${r.map(p => `<span class="l${p.line}">${esc(p.s)}</span>`).join("")}</div>`;
+    }
+    return `<div class="trip" data-i="${i}">
+      <div class="field"><label for="n${i}">Trip name</label><input type="text" id="n${i}" data-k="name" value="${esc(t.name || "")}" placeholder="Work"></div>
+      <div class="row">
+        <div class="field"><label for="f${i}">From</label><select id="f${i}" data-k="from">${options(t.from, "Choose…")}</select></div>
+        <div class="field"><label for="t${i}">To</label><select id="t${i}" data-k="to">${options(t.to, "Choose…")}</select></div>
+      </div>
+      <div class="field"><label for="v${i}">Transfer at</label><select id="v${i}" data-k="via">
+        <option value="">Automatic</option>${INTERCHANGES.map(s => `<option${s === t.via ? " selected" : ""}>${s}</option>`).join("")}</select></div>
+      ${info}
+      <div class="trip-actions">
+        <button class="link" type="button" data-act="reverse">⇄ Add return trip</button>
+        ${trips.length > 1 ? `<button class="link" type="button" data-act="remove">Remove</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  update();
+}
+function update() {
+  store.set(trips);
+  const text = tripsText();
+  $("#out").value = text;
+  const name = $("#scName").value.trim() || "TTC Slow Zones";
+  $("#run").href = `shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(text)}`;
+}
+
+$("#trips").addEventListener("input", e => {
+  const el = e.target, i = +el.closest(".trip").dataset.i, k = el.dataset.k;
+  if (!k) return;
+  trips[i][k] = el.value;
+  if (k === "name") update(); else render();
+});
+$("#trips").addEventListener("click", e => {
+  const act = e.target.dataset.act; if (!act) return;
+  const i = +e.target.closest(".trip").dataset.i, t = trips[i];
+  if (act === "remove") trips.splice(i, 1);
+  if (act === "reverse") trips.splice(i + 1, 0, { name: /work/i.test(t.name) ? "Home" : `${cleanName(t.name)} (back)`, from: t.to, to: t.from, via: t.via });
+  render();
+});
+$("#addTrip").addEventListener("click", () => { trips.push({ name: "", from: "", to: "", via: "" }); render(); });
+$("#scName").addEventListener("input", update);
+
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {} ta.remove(); return ok;
+  }
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 2200); }
+function guard(e) { if (!tripsText()) { e.preventDefault(); toast("Add at least one complete trip first"); return false; } return true; }
+
+$("#copy").addEventListener("click", async e => { if (guard(e)) toast(await copy(tripsText()) ? "Trips copied" : "Couldn't copy. Use the text box below"); });
+$("#install").addEventListener("click", async e => {
+  if (!guard(e)) return;
+  e.preventDefault(); const href = e.currentTarget.href;
+  const ok = await copy(tripsText());
+  toast(ok ? "Trips copied. Paste them when Shortcuts asks" : "Copy your trips from step 3 first");
+  setTimeout(() => { location.href = href; }, 700);
+});
+$("#run").addEventListener("click", guard);
+
+render();
+</script>
+</body>
+</html>
