@@ -68,7 +68,7 @@ add("conditional", GroupingIdentifier=gi, WFControlFlowMode=2, UUID=U())
 uid = U(); add("downloadurl", UUID=uid, WFURL=PAGE_URL, WFHTTPMethod="GET")
 page = replace(out(uid, "Contents of URL"), r"<[^>]+>", "|")
 page = replace(page, r"&nbsp;|&#160;", " ")
-page = replace(page, r"\s*\|[\s|]*", "|")
+page = replace(page, r"[ \t]*[\r\n\u2028\u2029|][\s|\u2028\u2029]*", "|")
 setv("Page", page)
 setv("Updated", match(var("Page"), r"Last Updated:\s*[^|]+"))
 setv("Zones", match(var("Page"), ZONE_RE))
@@ -80,7 +80,7 @@ setv("TripName", replace(var("Repeat Item"), r"^\s*([^:]*?)\s*:.*$", "$1"))
 stations = replace(var("Repeat Item"), r"^[^:]*:", "")
 setv("Route", normalize(text(",", stations, ",")))
 zero = number(0)
-setv("Extra", zero); setv("N", zero)
+setv("N", zero)
 setv("Lines", text(""))
 
 g2 = U(); add("repeat.each", GroupingIdentifier=g2, WFControlFlowMode=0, WFInput=att(var("Zones")))
@@ -88,20 +88,24 @@ setv("Key", normalize(replace(var("Repeat Item 2"), ZONE_RE, ",$2,$3,")))
 g3 = U(); add("conditional", GroupingIdentifier=g3, WFControlFlowMode=0, WFCondition=99,
               WFInput={"Type": "Variable", "Variable": att(var("Route"))},
               WFConditionalActionString=tok(var("Key")))
-expr = replace(replace(var("Repeat Item 2"), ZONE_RE, "$4*3.6*(1/$5-1/$6)"), ",", "", regex=False)
-setv("Secs", rnd(calc(expr)))
-setv("Extra", calc(var("Extra"), "+", var("Secs")))
 setv("N", calc(var("N"), "+1"))
-desc = replace(var("Repeat Item 2"), ZONE_RE, "$2 → $3: $5 km/h instead of $6 (fix: $7)")
-setv("Lines", text(var("Lines"), "\n🐢 ", desc, ", +", var("Secs"), " s"))
+desc = replace(var("Repeat Item 2"), ZONE_RE, "$2 → $3, $5 km/h")
+setv("Lines", text(var("Lines"), "\n• ", desc))
 add("conditional", GroupingIdentifier=g3, WFControlFlowMode=2, UUID=U())
 add("repeat.each", GroupingIdentifier=g2, WFControlFlowMode=2, UUID=U())
 
-mins = rnd(calc(var("Extra"), "/60"), "Tenths")
-setv("Report", text(var("Report"), "🚇 ", var("TripName"), ": ", var("N"), " slow zone(s), about +", mins, " min", var("Lines"), "\n\n"))
+# "1 slow zone" / "3 slow zones"
+plural = replace(replace(var("N"), r"^1$", ""), r"^[\d.]+$", "s")
+g4 = U(); add("conditional", GroupingIdentifier=g4, WFControlFlowMode=0, WFCondition=99,
+              WFInput={"Type": "Variable", "Variable": att(var("Lines"))}, WFConditionalActionString="•")
+setv("Block", text("🐢 ", var("TripName"), ": ", var("N"), " slow zone", plural, var("Lines")))
+add("conditional", GroupingIdentifier=g4, WFControlFlowMode=1)
+setv("Block", text("✅ ", var("TripName"), ": no slow zones"))
+add("conditional", GroupingIdentifier=g4, WFControlFlowMode=2, UUID=U())
+setv("Report", text(var("Report"), var("Block"), "\n\n"))
 add("repeat.each", GroupingIdentifier=g1, WFControlFlowMode=2, UUID=U())
 
-add("showresult", Text=tok(var("Report"), "TTC ", var("Updated")))
+add("showresult", Text=tok(var("Report"), var("Updated")))
 
 wf = {
     "WFWorkflowClientVersion": "2607.0.3",

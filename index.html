@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Slow Zone Check — Toronto subway slow zones on your commute</title>
-<meta name="description" content="Pick your subway trips and get an Apple Shortcut that tells you how many reduced speed zones are on your commute.">
+<meta name="description" content="Pick your subway trips and get an Apple Shortcut that tells you which reduced speed zones are on your commute.">
 <meta name="theme-color" content="#b3122a">
 <style>
   :root {
@@ -75,11 +75,12 @@
   <header>
     <span class="badge">🐢 Toronto subway · Lines 1 &amp; 2</span>
     <h1>How slow is your commute today?</h1>
-    <p>Pick your trips once. An Apple Shortcut then checks the TTC's reduced speed zone list and tells you how many are on your route and roughly how much time they add.</p>
+    <p>Pick your trips once. An Apple Shortcut then checks the TTC's reduced speed zone list and tells you which ones are on your route.</p>
     <div class="example" aria-label="Example result">
-      <div><b>🚇 Work: 2 slow zone(s), about +0.6 min</b></div>
-      <div>🐢 St Clair West → Dupont: 25 km/h instead of 65, +25 s</div>
-      <div>🐢 Union → King: 20 km/h instead of 36, +13 s</div>
+      <div><b>🐢 Work: 2 slow zones</b></div>
+      <div>• St Clair West → Dupont, 25 km/h</div>
+      <div>• Union → King, 20 km/h</div>
+      <div style="margin-top:8px"><b>✅ Home: no slow zones</b></div>
     </div>
   </header>
 
@@ -123,7 +124,7 @@
   </section>
 
   <footer>
-    <p>Not affiliated with or endorsed by the Toronto Transit Commission. The shortcut reads the TTC's public <a href="https://www.ttc.ca/riding-the-ttc/Updates/Reduced-Speed-Zones">Reduced Speed Zones</a> page directly on your phone each time it runs; this site doesn't collect or republish any data. Delay estimates only count time spent at reduced speed, so the real delay is usually a little longer. Always check the TTC for official service information.</p>
+    <p>Not affiliated with or endorsed by the Toronto Transit Commission. The shortcut reads the TTC's public <a href="https://www.ttc.ca/riding-the-ttc/Updates/Reduced-Speed-Zones">Reduced Speed Zones</a> page directly on your phone each time it runs; this site doesn't collect or republish any data. Always check the TTC for official service information.</p>
   </footer>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -1,6 +1,6 @@
 # Slow Zone Check
 
-A one-page site that helps Toronto subway riders set up an Apple Shortcut showing how many TTC reduced speed zones are on their commute, and roughly how much time they add.
+A one-page site that helps Toronto subway riders set up an Apple Shortcut showing which TTC reduced speed zones are on their commute.
 
 - **The page** (`index.html`) lets people pick their trips (From/To, with automatic Line 1 ↔ Line 2 transfers), copies them, and links to the shortcut.
 - **The shortcut** (`TTC Slow Zones.shortcut`) downloads the TTC's [Reduced Speed Zones](https://www.ttc.ca/riding-the-ttc/Updates/Reduced-Speed-Zones) page on the rider's own phone each time it runs, finds the zones on each trip, and shows the result.
@@ -28,8 +28,9 @@ mv signed.shortcut "TTC Slow Zones.shortcut"
 Then **test it before publishing**: double-click the file, add it, and run it once on your iPhone (tap Allow for ttc.ca). You should see something like:
 
 ```
-🚇 Work: 2 slow zone(s), about +0.6 min
-🐢 St Clair West → Dupont: 25 km/h instead of 65 (fix: Mid-December), +25 s
+🐢 Work: 2 slow zones
+• St Clair West → Dupont, 25 km/h
+• Union → King, 20 km/h
 ```
 
 Keep the file name `TTC Slow Zones.shortcut`. The page links to that name, and the "Check my trips now" button runs the shortcut by that name.
@@ -54,8 +55,6 @@ Trips come from either:
 - the text pasted at install (the first Text action), used for Siri, automations and the Shortcuts app, or
 - the page's **Check my trips now** button, which runs the shortcut with the page's trips through `shortcuts://run-shortcut?...&input=text`.
 
-Delay per zone = `defect length × 3.6 × (1/reduced − 1/normal)` seconds: time lost at reduced speed only, not braking and speeding back up.
-
 ## Changing the shortcut
 
 Edit `tools/make_shortcut.py`, then:
@@ -70,7 +69,7 @@ python3 tools/simulate.py "TTC Slow Zones.shortcut"     # check the output looks
 ## If it breaks
 
 - **0 zones for every trip, or an error:** the TTC probably changed its page. In Shortcuts, add a Quick Look after the third *Replace Text* action. It should show text like `|Northbound Union to King|168|454|…`. Update the zone pattern (`ZONE_RE` in `tools/make_shortcut.py`) to match. Note: on iPhone, Shortcuts hands the page over as plain text (one table cell per line), not raw HTML. The parser handles both, and `PAGE_MODE=text python3 tools/simulate.py …` tests the plain-text form.
-- **"Fix" shows the wrong thing:** a table column was added or removed. Same fix.
+- **Wrong speed shown:** a table column was added or removed. Same fix.
 - **A variable shows as missing inside the second loop:** tap it and pick *Repeat Item 2*.
 
 ## Notes

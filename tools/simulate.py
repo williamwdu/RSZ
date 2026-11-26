@@ -1,4 +1,4 @@
-import plistlib, re, sys
+import plistlib, re, sys, os
 wf = plistlib.load(open(sys.argv[1], "rb"))
 acts = wf["WFWorkflowActions"]
 rows = [("Line 1 to VMC", [("Northbound St Clair West to Cedarvale",221,"2,617",8,25,53,"TBD"),("Northbound Wilson to Sheppard West",410,"2,032",20,35,71,"TBD")]),
@@ -14,6 +14,10 @@ for h, rs in rows:
 html += "<p>Queen&#39;s Park FAQ</p></body></html>"
 
 V, O = {}, {}
+if os.environ.get("PAGE_FILE"): html = open(os.environ["PAGE_FILE"]).read()
+elif os.environ.get("PAGE_MODE") == "text":
+    _t = re.sub(r"<br\s*/?>|</(td|th|p|h3|tr)>", "\n", html); _t = re.sub(r"<[^>]+>", "", _t)
+    html = re.sub(r"\n[ \t]*\n+", "\n", _t.replace("&#39;", "'").replace("&nbsp;", " ")).strip()
 import os
 INPUT=os.environ.get("SC_INPUT","")
 TRIPS="Weekend:  broadview , castle frank,Sherbourne, Bloor-Yonge, Bay, st. george, Museum\n\nEast: Warden, Victoria Park, Main Street\nWest: Main Street, Victoria Park, Warden\nDowntown: queen, tmu, college"
